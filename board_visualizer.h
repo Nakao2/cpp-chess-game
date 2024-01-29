@@ -27,14 +27,14 @@ char GetCharForPiece(const ChessPiece& piece) {
 void BoardVisualizerFunc(const Chess& board) {
 	const pair<int, int> dim = board.GetDimensions();
 	cout << ' ' << ' ' << ' ' << ' ';
-	for (int m = 0; m < dim.second; ++m) {
-		cout << m << ' ' << ' ' << ' ';
+	for (int columns = 0; columns < dim.second; ++columns) {
+		cout << columns << ' ' << ' ' << ' ';
 	}
 	cout << '\n';
-	for (int n = 0; n < dim.first; ++n) {
-		cout << n << ' ' << ' ' << ' ';
-		for (int m = 0; m < dim.second; ++m) {
-			const BoardTile& tile = board.LookUp(n, m);
+	for (int rows = 0; rows < dim.first; ++rows) {
+		cout << rows << ' ' << ' ' << ' ';
+		for (int columns = 0; columns < dim.second; ++columns) {
+			const BoardTile& tile = board.LookUp(rows, columns);
 			char team = ' ';
 			if (tile.piece_team == ChessTeam::BLACK) {
 				team = 'b';

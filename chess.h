@@ -8,6 +8,9 @@
 
 using namespace std;
 
+constexpr int STANDART_BOARD_WIDTH = 8;
+constexpr int STANDART_BOARD_LENGTH = 8;
+
 enum class ChessPiece {
 	EMPTY,
 
@@ -34,14 +37,14 @@ struct BoardTile {
 class Chess {
 public:
 
-	Chess(int x, int y) {             // Board has matrix-like dimensions of (n x m), where an element of 1x1 board has coordinates (0, 0)
-		rows = x;
-		columns = y;
+	Chess(int n, int m) {             // Board has matrix-like dimensions of (n x m), where an element of 1x1 board has coordinates (0, 0)
+		rows_ = n;
+		columns_ = m;
 		try {
-			BoardTile** row_ptr = new BoardTile * [x];
-			array_ptr = row_ptr;
-			for (int i = 0; i < x; ++i) {
-				BoardTile* column_ptr = new BoardTile[y];
+			BoardTile** row_ptr = new BoardTile* [n];
+			array_ptr_ = row_ptr;
+			for (int i = 0; i < n; ++i) {
+				BoardTile* column_ptr = new BoardTile[m];
 				row_ptr[i] = column_ptr;
 			}
 		}
@@ -50,23 +53,25 @@ public:
 			throw;
 		}
 	}
-	Chess() : Chess(8,8) {
-		for (int i = 0; i < rows; i += 7) {                                  // Classic game of chess piece setup
-			ChessTeam team = (i == 0) ? ChessTeam::BLACK : ChessTeam::WHITE;
-			array_ptr[i][0] = { ChessPiece::ROOK, team };
-			array_ptr[i][1] = { ChessPiece::KNIGHT, team };
-			array_ptr[i][2] = { ChessPiece::BISHOP, team };
-			array_ptr[i][3] = { ChessPiece::QUEEN, team };
-			array_ptr[i][4] = { ChessPiece::KING, team };
-			array_ptr[i][5] = { ChessPiece::BISHOP, team };
-			array_ptr[i][6] = { ChessPiece::KNIGHT, team };
-			array_ptr[i][7] = { ChessPiece::ROOK, team };
+
+	// Classic game of chess piece setup
+	Chess() : Chess(STANDART_BOARD_WIDTH, STANDART_BOARD_LENGTH) {
+		for (int row = 0; row < rows_; row += 7) {                             // To avoid code duplication
+			ChessTeam team = (row == 0) ? ChessTeam::BLACK : ChessTeam::WHITE;
+			array_ptr_[row][0] = { ChessPiece::ROOK, team };
+			array_ptr_[row][1] = { ChessPiece::KNIGHT, team };
+			array_ptr_[row][2] = { ChessPiece::BISHOP, team };
+			array_ptr_[row][3] = { ChessPiece::QUEEN, team };
+			array_ptr_[row][4] = { ChessPiece::KING, team };
+			array_ptr_[row][5] = { ChessPiece::BISHOP, team };
+			array_ptr_[row][6] = { ChessPiece::KNIGHT, team };
+			array_ptr_[row][7] = { ChessPiece::ROOK, team };
 		}
-		for (int i = 0; i < columns; ++i) {
-			array_ptr[1][i] = { ChessPiece::PAWN, ChessTeam::BLACK };
+		for (int column = 0; column < columns_; ++column) {
+			array_ptr_[1][column] = { ChessPiece::PAWN, ChessTeam::BLACK };
 		}
-		for (int i = 0; i < columns; ++i) {
-			array_ptr[6][i] = { ChessPiece::PAWN, ChessTeam::WHITE };
+		for (int column = 0; column < columns_; ++column) {
+			array_ptr_[6][column] = { ChessPiece::PAWN, ChessTeam::WHITE };
 		}
 	}
 	Chess(const Chess& copy) = delete;
@@ -77,15 +82,15 @@ public:
 
 	BoardTile LookUp(int row, int column) const {
 		if (!CheckOutOfBounds(row, column)) {
-			return array_ptr[row][column];
+			return array_ptr_[row][column];
 		}
 		return {};
 	}
 
 	void FillBoardWith(const BoardTile& piece) {
-		for (int i = 0; i < rows; ++i) {
-			for (int k = 0; k < columns; ++k) {
-				array_ptr[i][k] = piece;
+		for (int i = 0; i < rows_; ++i) {
+			for (int k = 0; k < columns_; ++k) {
+				array_ptr_[i][k] = piece;
 			}
 		}
 	}
@@ -98,7 +103,7 @@ public:
 
 	void PutPieceInPosition(const BoardTile& piece, int row, int column) {
 		if (!CheckOutOfBounds(row, column)) {
-			array_ptr[row][column] = piece;
+			array_ptr_[row][column] = piece;
 		}
 	}
 
@@ -108,8 +113,8 @@ public:
 		if (!CheckValidPieceSelected(n_input, m_input)) {
 			return output;
 		}
-		for (int n = 0; n < rows; ++n) {
-			for (int m = 0; m < columns; ++m) {
+		for (int n = 0; n < rows_; ++n) {
+			for (int m = 0; m < columns_; ++m) {
 				if (CheckLegalPieceMove(n_input, m_input, n, m) && !CheckCollision(n_input, m_input, n, m)) {
 					output.push_back({n, m});
 				}
@@ -124,9 +129,9 @@ public:
 		if (CheckValidPieceSelected(n_input, m_input) && CheckCorrectTurnSequence(n_input, m_input) && 
 			CheckLegalPieceMove(n_input, m_input, n_dest, m_dest) && !CheckCollision(n_input, m_input, n_dest, m_dest)) {
 
-			array_ptr[n_dest][m_dest] = array_ptr[n_input][m_input];
-			array_ptr[n_input][m_input] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL };
-			is_whites_move = (is_whites_move) ? 0 : 1;
+			array_ptr_[n_dest][m_dest] = array_ptr_[n_input][m_input];
+			array_ptr_[n_input][m_input] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL };
+			is_whites_move_ = (is_whites_move_) ? 0 : 1;
 		}
 		else {
 			cout << "Illegal move"s << endl;
@@ -134,22 +139,22 @@ public:
 	}
 
 	pair<int, int> GetDimensions() const {
-		return { rows, columns };
+		return { rows_, columns_ };
 	}
 	ChessTeam WhoseMove() const {
-		return (is_whites_move) ? ChessTeam::WHITE : ChessTeam::BLACK;
+		return (is_whites_move_) ? ChessTeam::WHITE : ChessTeam::BLACK;
 	}
 
 private:
-	BoardTile** array_ptr;
-	int rows, columns;
-	bool is_whites_move = true;
+	BoardTile** array_ptr_;
+	int rows_, columns_;
+	bool is_whites_move_ = true;
 
 	bool CheckOutOfBounds(int row, int column) const {
-		if ((row >= rows) || (row < 0)) {
+		if ((row >= rows_) || (row < 0)) {
 			return true;
 		}
-		if ((column >= columns) || (column < 0)) {
+		if ((column >= columns_) || (column < 0)) {
 			return true;
 		}
 		return false;
@@ -158,7 +163,7 @@ private:
 	// Can't move OutOfBounds or EMPTY tile
 	bool CheckValidPieceSelected(int n_input, int m_input) const {
 		if (!CheckOutOfBounds(n_input, m_input)) {
-			return (array_ptr[n_input][m_input].piece_type != ChessPiece::EMPTY);
+			return (array_ptr_[n_input][m_input].piece_type != ChessPiece::EMPTY);
 		}
 		cout << "Invalid piece selected" << endl;
 		return false;
@@ -166,11 +171,11 @@ private:
 
 	// Can't move black pieces at whites turn
 	bool CheckCorrectTurnSequence(int n_input, int m_input) const {
-		if (array_ptr[n_input][m_input].piece_team == ChessTeam::WHITE) {
-			return is_whites_move;
+		if (array_ptr_[n_input][m_input].piece_team == ChessTeam::WHITE) {
+			return is_whites_move_;
 		}
 		else {
-			return !is_whites_move;
+			return !is_whites_move_;
 		}
 	}
 
@@ -185,7 +190,7 @@ private:
 		if (CheckOutOfBounds(n_destination, m_destination)) {
 			return false;
 		}
-		const BoardTile& piece = array_ptr[n_input][m_input];
+		const BoardTile& piece = array_ptr_[n_input][m_input];
 		switch (piece.piece_type) {
 		default:
 			std::cout << "No chess pieces at that position"s << endl;
@@ -227,7 +232,7 @@ private:
 		{
 			int8_t pos_dif_n = (piece.piece_team == ChessTeam::WHITE) ? 1 : -1;
 			int8_t pos_dif_m = 1;
-			if (array_ptr[n_destination][m_destination].piece_type == ChessPiece::EMPTY) {
+			if (array_ptr_[n_destination][m_destination].piece_type == ChessPiece::EMPTY) {
 				pos_dif_m = 0;
 			}
 			if (n_input - n_destination == pos_dif_n && std::abs(m_input - m_destination) <= pos_dif_m) {
@@ -241,8 +246,8 @@ private:
 	// Collision with pieces in the path of movement
     // Expected to run after CheckValidPieceSelected() and CheckLegalPieceMove()
 	bool CheckCollision(int n_input, int m_input, int n_dest, int m_dest) const {
-		const BoardTile& piece_input = array_ptr[n_input][m_input];
-		const BoardTile& dest_tile = array_ptr[n_dest][m_dest];
+		const BoardTile& piece_input = array_ptr_[n_input][m_input];
+		const BoardTile& dest_tile = array_ptr_[n_dest][m_dest];
 		if (dest_tile.piece_team == piece_input.piece_team) {
 			return true;
 		}
@@ -257,7 +262,7 @@ private:
 			int pos1 = n_input + increment_n;
 			int pos2 = m_input + increment_m;
 			while (pos1 != n_dest) {
-				if (array_ptr[pos1][pos2].piece_type != ChessPiece::EMPTY) {
+				if (array_ptr_[pos1][pos2].piece_type != ChessPiece::EMPTY) {
 					return true;
 				}
 				pos1 += increment_n;
@@ -280,7 +285,7 @@ private:
 			int pos1 = n_input + increment_n;
 			int pos2 = m_input + increment_m;
 			while (pos1 != n_dest || pos2 != m_dest) {
-				if (array_ptr[pos1][pos2].piece_type != ChessPiece::EMPTY) {
+				if (array_ptr_[pos1][pos2].piece_type != ChessPiece::EMPTY) {
 					return true;
 				}
 				pos1 += increment_n;
@@ -301,7 +306,7 @@ private:
 			int pos1 = n_input + increment_n;
 			int pos2 = m_input + increment_m;
 			while (pos1 != n_dest || pos2 != m_dest) {
-				if (array_ptr[pos1][pos2].piece_type != ChessPiece::EMPTY) {
+				if (array_ptr_[pos1][pos2].piece_type != ChessPiece::EMPTY) {
 					return true;
 				}
 				pos1 += increment_n;
@@ -311,17 +316,17 @@ private:
 		}
 		case ChessPiece::PAWN:
 			if (m_input == m_dest) {
-				return (array_ptr[n_dest][m_dest].piece_type != ChessPiece::EMPTY);
+				return (array_ptr_[n_dest][m_dest].piece_type != ChessPiece::EMPTY);
 			}
 			return false;
 		}
 	}
 
 	void CleanUp() {
-		for (int i = 0; i < rows; ++i) {
-			delete[] array_ptr[i];
+		for (int i = 0; i < rows_; ++i) {
+			delete[] array_ptr_[i];
 		}
-		array_ptr = nullptr;
+		array_ptr_ = nullptr;
 	}
 
 };

@@ -24,11 +24,11 @@ public:
 				}
 			}
 		}
-		array_ptr = new pair<int, int>[pieces_pos.size()];
+		array_ptr_ = new pair<int, int>[pieces_pos.size()];
 		size_ = pieces_pos.size();
 		max_size_ = pieces_pos.size();
 		for (size_t i = 0; i < size_; ++i) {
-			array_ptr[i] = pieces_pos[i];
+			array_ptr_[i] = pieces_pos[i];
 		}
 		board_ = &board;
 	}
@@ -59,7 +59,7 @@ public:
 
 		while (output_pos.empty() && attempts < MAX_NUM_OF_ATTEMPTS) {
 			input_rand_num = distr1(gen);
-			rand_input_pos = array_ptr[input_rand_num];
+			rand_input_pos = array_ptr_[input_rand_num];
 			output_pos = std::move(board_->GetPossibleDestTiles(rand_input_pos.first, rand_input_pos.second));
 			++attempts;
 		}
@@ -71,7 +71,7 @@ public:
 				"] to a position [" << rand_output_pos.first << ", " << rand_output_pos.second << ']' << '\n' << endl;
 			board_->MovePiece(rand_input_pos.first, rand_input_pos.second,
 				rand_output_pos.first, rand_output_pos.second);
-			array_ptr[input_rand_num] = rand_output_pos;
+			array_ptr_[input_rand_num] = rand_output_pos;
 		}
 	}
 
@@ -88,7 +88,7 @@ public:
 		int pieces_left_to_check = size_;
 		bool capture_success = false;
 		for (int i = 0; i < size_; ++i) {
-			pieces_pos_ptrs[i] = &array_ptr[i];
+			pieces_pos_ptrs[i] = &array_ptr_[i];
 		}
 		std::random_device rd;
 		std::mt19937 gen(rd());
@@ -129,7 +129,7 @@ public:
 
 private:
 	Chess* board_ = nullptr;
-	pair<int, int>* array_ptr = nullptr;
+	pair<int, int>* array_ptr_ = nullptr;
 	size_t size_ = 0;
 	size_t max_size_ = 0;
 	ChessTeam team_;
@@ -137,8 +137,8 @@ private:
 	// Finds and removes pieces from database that no longer exist on the board
 	void RemoveCapturedPieces() {
 		for (size_t i = 0; i < size_; ++i) {
-			if (board_->LookUp(array_ptr[i].first, array_ptr[i].second).piece_team != team_) {
-				array_ptr[i] = array_ptr[size_ - 1];               // Removal at O(1), but sequence of elements is broken
+			if (board_->LookUp(array_ptr_[i].first, array_ptr_[i].second).piece_team != team_) {
+				array_ptr_[i] = array_ptr_[size_ - 1];               // Removal at O(1), but sequence of elements is broken
 				--size_;
 				break;                // Removes unecessary checks, if the maximum number of captured pieces per turn is 1
 			}
@@ -146,6 +146,6 @@ private:
 	}
 
 	void CleanUp() {
-		delete[] array_ptr;
+		delete[] array_ptr_;
 	}
 };
