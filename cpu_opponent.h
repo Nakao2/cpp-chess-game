@@ -60,7 +60,7 @@ public:
 		while (output_pos.empty() && attempts < MAX_NUM_OF_ATTEMPTS) {
 			input_rand_num = distr1(gen);
 			rand_input_pos = array_ptr_[input_rand_num];
-			output_pos = std::move(board_->GetPossibleDestTiles(rand_input_pos.first, rand_input_pos.second));
+			output_pos = board_->GetPossibleDestTiles(rand_input_pos.first, rand_input_pos.second);
 			++attempts;
 		}
 
@@ -69,8 +69,7 @@ public:
 			pair<int, int> rand_output_pos = output_pos[distr2(gen)];
 			cout << "Attempt to move piece at [" << rand_input_pos.first << ", " << rand_input_pos.second <<
 				"] to a position [" << rand_output_pos.first << ", " << rand_output_pos.second << ']' << '\n' << endl;
-			board_->MovePiece(rand_input_pos.first, rand_input_pos.second,
-				rand_output_pos.first, rand_output_pos.second);
+			board_->MovePiece(rand_input_pos, rand_output_pos);
 			array_ptr_[input_rand_num] = rand_output_pos;
 		}
 	}
@@ -110,8 +109,7 @@ public:
 				std::uniform_int_distribution<> distr2(0, capture_moves.size() - 1);
 				int rand_num = distr2(gen);
 				rand_output_pos = capture_moves[rand_num];           // Randomly select what piece to capture
-				board_->MovePiece(rand_input_pos.first, rand_input_pos.second,
-					rand_output_pos.first, rand_output_pos.second);
+				board_->MovePiece(rand_input_pos ,rand_output_pos);
 				*pieces_pos_ptrs[rand_num] = rand_output_pos;        // Piece moved, modify our positions database
 				capture_success = true;
 				pieces_left_to_check = 1;                            // This ends the cycle

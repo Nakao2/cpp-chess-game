@@ -16,15 +16,22 @@ char GetCharForPiece(const ChessPiece& piece) {
 	case ChessPiece::BISHOP:
 		return 'B';
 	case ChessPiece::KNIGHT:
-		return 'K';
+		return 'N';
 	case ChessPiece::QUEEN:
 		return 'Q';
 	case ChessPiece::KING:
-		return '$';
+		return 'K';
 	}
 }
 
 void BoardVisualizerFunc(const Chess& board) {
+	if (board.WhoseMove() == ChessTeam::WHITE) {
+		cout << "Whites move"s;
+	}
+	else {
+		cout << "Blacks move"s;
+	}
+	cout << '\n';
 	const pair<int, int> dim = board.GetDimensions();
 	cout << ' ' << ' ' << ' ' << ' ';
 	for (int columns = 0; columns < dim.second; ++columns) {

@@ -5,6 +5,7 @@
 #include <cassert>
 #include <new>
 #include <deque>
+#include <algorithm>
 
 using namespace std;
 
@@ -38,10 +39,10 @@ class Chess {
 public:
 
 	Chess(int n, int m) {             // Board has matrix-like dimensions of (n x m), where an element of 1x1 board has coordinates (0, 0)
-		rows_ = n;
-		columns_ = m;
 		try {
 			BoardTile** row_ptr = new BoardTile* [n];
+			rows_ = n;
+			columns_ = m;
 			array_ptr_ = row_ptr;
 			for (int i = 0; i < n; ++i) {
 				BoardTile* column_ptr = new BoardTile[m];
@@ -74,7 +75,28 @@ public:
 			array_ptr_[6][column] = { ChessPiece::PAWN, ChessTeam::WHITE };
 		}
 	}
-	Chess(const Chess& copy) = delete;
+	// Creates a copy of a board state and stores it in newly allocated memory
+	// array_ptr_ will be unique
+	Chess(const Chess& source) : Chess(source.GetDimensions().first, source.GetDimensions().second) {
+		for (int row = 0; row < rows_; ++row) {
+			for (int column = 0; column < columns_; ++column) {
+				const BoardTile& tile = source.LookUp(row, column);
+				this->PutPieceInPosition(tile, row, column);
+			}
+		}
+		this->is_whites_move_ = source.is_whites_move_;
+	}
+	Chess& operator=(const Chess& source) {
+		if (&source == this) {
+			return *this;
+		}
+		Chess copy(source);
+		std::swap(this->array_ptr_, copy.array_ptr_);
+		std::swap(this->rows_, copy.rows_);
+		std::swap(this->columns_, copy.columns_);
+		this->is_whites_move_ = copy.is_whites_move_;
+		return *this;
+	}
 
 	~Chess() {
 		CleanUp();
@@ -123,18 +145,20 @@ public:
 		return output;
 	}
 
-	// Does all the necessary checks and moves a piece
-	// Or does nothing if the move is illegal
-	void MovePiece(int n_input, int m_input, int n_dest, int m_dest) {         // Convert to bool to indicate successful move?
-		if (CheckValidPieceSelected(n_input, m_input) && CheckCorrectTurnSequence(n_input, m_input) && 
-			CheckLegalPieceMove(n_input, m_input, n_dest, m_dest) && !CheckCollision(n_input, m_input, n_dest, m_dest)) {
+	// Does all the necessary checks, moves a piece and returns 'true'
+	// Or does nothing and returns 'false' if the move is illegal
+	bool MovePiece(pair<int, int> input_pos, pair<int, int> dest_pos) {
+		if (CheckValidPieceSelected(input_pos.first, input_pos.second) && CheckCorrectTurnSequence(input_pos.first, input_pos.second) &&
+			CheckLegalPieceMove(input_pos.first, input_pos.second, dest_pos.first, dest_pos.second) &&
+		   !CheckCollision(input_pos.first, input_pos.second, dest_pos.first, dest_pos.second)) {
 
-			array_ptr_[n_dest][m_dest] = array_ptr_[n_input][m_input];
-			array_ptr_[n_input][m_input] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL };
+			array_ptr_[dest_pos.first][dest_pos.second] = array_ptr_[input_pos.first][input_pos.second];
+			array_ptr_[input_pos.first][input_pos.second] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL };
 			is_whites_move_ = (is_whites_move_) ? 0 : 1;
+			return true;
 		}
 		else {
-			cout << "Illegal move"s << endl;
+			return false;
 		}
 	}
 
@@ -147,7 +171,8 @@ public:
 
 private:
 	BoardTile** array_ptr_;
-	int rows_, columns_;
+	int rows_ = 0;
+	int columns_ = 0;
 	bool is_whites_move_ = true;
 
 	bool CheckOutOfBounds(int row, int column) const {
@@ -183,11 +208,11 @@ private:
 	// Checks piece movement according to chess rules
 	// Also does OutOfBounds check for destination tile
 	// Expected to run after CheckValidPieceSelected()	
-	bool CheckLegalPieceMove(int n_input, int m_input, int n_destination, int m_destination) const {
-		if (n_input == n_destination && m_input == m_destination) {
+	bool CheckLegalPieceMove(int n_input, int m_input, int n_dest, int m_dest) const {
+		if (n_input == n_dest && m_input == m_dest) {
 			return false;
 		}
-		if (CheckOutOfBounds(n_destination, m_destination)) {
+		if (CheckOutOfBounds(n_dest, m_dest)) {
 			return false;
 		}
 		const BoardTile& piece = array_ptr_[n_input][m_input];
@@ -197,34 +222,34 @@ private:
 			return false;
 		case ChessPiece::KNIGHT:
 		{
-			int n_abs_dif = std::abs(n_input - n_destination);
+			int n_abs_dif = std::abs(n_input - n_dest);
 			if (n_abs_dif == 2 || n_abs_dif == 1) {
-				if (n_abs_dif + std::abs(m_input - m_destination) == 3) {
+				if (n_abs_dif + std::abs(m_input - m_dest) == 3) {
 					return true;
 				}
 			}
 			return false;
 		}
 		case ChessPiece::BISHOP:
-			if (std::abs(n_input - n_destination) == std::abs(m_input - m_destination)) {
+			if (std::abs(n_input - n_dest) == std::abs(m_input - m_dest)) {
 				return true;
 			}
 			return false;
 		case ChessPiece::ROOK:
-			if (n_input == n_destination || m_input == m_destination) {
+			if (n_input == n_dest || m_input == m_dest) {
 				return true;
 			}
 			return false;
 		case ChessPiece::KING:
-			if (std::abs(n_input - n_destination) <= 1 && std::abs(m_input - m_destination) <= 1) {
+			if (std::abs(n_input - n_dest) <= 1 && std::abs(m_input - m_dest) <= 1) {
 				return true;
 			}
 			return false;
 		case ChessPiece::QUEEN:
-			if (n_input == n_destination || m_input == m_destination) {
+			if (n_input == n_dest || m_input == m_dest) {
 				return true;
 			}
-			if (std::abs(n_input - n_destination) == std::abs(m_input - m_destination)) {
+			if (std::abs(n_input - n_dest) == std::abs(m_input - m_dest)) {
 				return true;
 			}
 			return false;
@@ -232,10 +257,10 @@ private:
 		{
 			int8_t pos_dif_n = (piece.piece_team == ChessTeam::WHITE) ? 1 : -1;
 			int8_t pos_dif_m = 1;
-			if (array_ptr_[n_destination][m_destination].piece_type == ChessPiece::EMPTY) {
+			if (array_ptr_[n_dest][m_dest].piece_type == ChessPiece::EMPTY) {
 				pos_dif_m = 0;
 			}
-			if (n_input - n_destination == pos_dif_n && std::abs(m_input - m_destination) <= pos_dif_m) {
+			if (n_input - n_dest == pos_dif_n && std::abs(m_input - m_dest) <= pos_dif_m) {
 				return true;
 			}
 			return false;
@@ -326,6 +351,7 @@ private:
 		for (int i = 0; i < rows_; ++i) {
 			delete[] array_ptr_[i];
 		}
+		delete[] array_ptr_;
 		array_ptr_ = nullptr;
 	}
 
