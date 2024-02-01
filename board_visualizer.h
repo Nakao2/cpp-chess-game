@@ -2,8 +2,7 @@
 
 #include "chess.h"
 #include <iostream>
-
-using namespace std;
+#include <tuple>
 
 char GetCharForPiece(const ChessPiece& piece) {
 	switch (piece) {
@@ -25,21 +24,22 @@ char GetCharForPiece(const ChessPiece& piece) {
 }
 
 void BoardVisualizerFunc(const Chess& board) {
+	using namespace std::string_literals;
 	if (board.WhoseMove() == ChessTeam::WHITE) {
-		cout << "Whites move"s;
+		std::cout << "Whites move"s;
 	}
 	else {
-		cout << "Blacks move"s;
+		std::cout << "Blacks move"s;
 	}
-	cout << '\n';
-	const pair<int, int> dim = board.GetDimensions();
-	cout << ' ' << ' ' << ' ' << ' ';
+	std::cout << '\n';
+	const std::pair<int, int> dim = board.GetDimensions();
+	std::cout << ' ' << ' ' << ' ' << ' ';
 	for (int columns = 0; columns < dim.second; ++columns) {
-		cout << columns << ' ' << ' ' << ' ';
+		std::cout << columns << ' ' << ' ' << ' ';
 	}
-	cout << '\n';
+	std::cout << '\n';
 	for (int rows = 0; rows < dim.first; ++rows) {
-		cout << rows << ' ' << ' ' << ' ';
+		std::cout << rows << ' ' << ' ' << ' ';
 		for (int columns = 0; columns < dim.second; ++columns) {
 			const BoardTile& tile = board.LookUp(rows, columns);
 			char team = ' ';
@@ -49,9 +49,9 @@ void BoardVisualizerFunc(const Chess& board) {
 			if (tile.piece_team == ChessTeam::WHITE) {
 				team = 'w';
 			}
-			cout << GetCharForPiece(tile.piece_type) << team << ' ' << ' ';
+			std::cout << GetCharForPiece(tile.piece_type) << team << ' ' << ' ';
 		}
-		cout << '\n' << '\n';
+		std::cout << '\n' << '\n';
 	}
-	cout << '\n' << '\n';
+	std::cout << '\n' << '\n';
 }

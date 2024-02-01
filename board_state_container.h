@@ -3,6 +3,9 @@
 #include "chess.h"
 #include <deque>
 
+// Stores board states (objects of type 'Chess')
+// Is not tied to any particular game
+// Meaning, can store boards of various sizes at the same time
 class BoardStateContainer {
 public:
 
@@ -13,5 +16,5 @@ public:
 	void Clear();
 
 private:
-	deque<Chess> boards_;
+	std::deque<Chess> boards_;
 };

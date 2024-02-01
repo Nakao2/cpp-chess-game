@@ -1,7 +1,7 @@
 #include "board_state_container.h"
 #include "chess.h"
 #include <deque>
-#include <new>
+#include <stdexcept>
 
 using namespace std;
 
