@@ -19,3 +19,7 @@ Chess BoardStateContainer::GetBoardState(int turn_num) const {
 void BoardStateContainer::Clear() {
 	boards_.clear();
 }
+
+size_t BoardStateContainer::GetSize() const {
+	return boards_.size();
+}

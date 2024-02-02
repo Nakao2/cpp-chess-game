@@ -75,7 +75,7 @@ void RandomMovesPlayer::AgrMovePiece() {
 		return;
 	}
 
-	pair<int, int>** pieces_pos_ptrs = new pair<int, int>* [size_];
+	deque<pair<int, int>*> pieces_pos_ptrs(size_);
 	int pieces_left_to_check = size_;
 	bool capture_success = false;
 	for (int i = 0; i < size_; ++i) {
@@ -83,24 +83,25 @@ void RandomMovesPlayer::AgrMovePiece() {
 	}
 	std::random_device rd;
 	std::mt19937 gen(rd());
+
 	for (int pieces_left_to_check = size_; pieces_left_to_check > 0; --pieces_left_to_check) { // Go through each available piece once
 		std::uniform_int_distribution<> distr1(0, pieces_left_to_check - 1);
 		int rand_num = distr1(gen);
-		pair<int, int> rand_input_pos = *pieces_pos_ptrs[rand_num];
+		pair<int, int> rand_input_pos = *pieces_pos_ptrs[rand_num]; // Select a random piece
 		pair<int, int> rand_output_pos;
 
 		deque<pair<int, int>> moves = std::move(board_->GetPossibleDestTiles(rand_input_pos.first, rand_input_pos.second));
 		deque<pair<int, int>> capture_moves;
-		for (pair<int, int>& pos : moves) {  // Checks if any move for a random piece can capture
+		for (const pair<int, int>& pos : moves) {  // Checks if any move for a random piece can capture
 			if (board_->LookUp(pos.first, pos.second).piece_type != ChessPiece::EMPTY) {
-				capture_moves.push_back(std::move(pos));
+				capture_moves.push_back(pos);
 			}
 		}
 
 		if (!capture_moves.empty()) {
 			std::uniform_int_distribution<> distr2(0, capture_moves.size() - 1);
-			int rand_num = distr2(gen);
-			rand_output_pos = capture_moves[rand_num];           // Randomly select what piece to capture
+			int rand_num2 = distr2(gen);
+			rand_output_pos = capture_moves[rand_num2];           // Randomly select what piece to capture
 			board_->MovePiece(rand_input_pos, rand_output_pos);
 			*pieces_pos_ptrs[rand_num] = rand_output_pos;        // Piece moved, modify our positions database
 			capture_success = true;
@@ -111,7 +112,6 @@ void RandomMovesPlayer::AgrMovePiece() {
 		pieces_pos_ptrs[rand_num] = pieces_pos_ptrs[pieces_left_to_check - 1]; // Piece checked, don't need to do it again
 	}
 
-	delete[] pieces_pos_ptrs;
 	if (!capture_success) {
 		this->MovePiece();
 	}

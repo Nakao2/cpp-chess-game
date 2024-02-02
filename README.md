@@ -19,13 +19,25 @@ Also included:
    Generates moves randomly and updates the board. Does not have a strategy or follow any tactics,
    aside from being able to prioritize agressive moves(capturing a piece) over non-agressive.
 
+4) chess_history.h
+   Class derived form Chess. Added BoardStateContainer as a member.
+   Writes into it with every successful move.
+
 
 Known bugs:
-  1) cpu_opponent.h
-     Method AgrMovePiece() sometimes ignores a possible capture move.
+
+// Fixed
+x) cpu_opponent.h
+   Method AgrMovePiece() sometimes ignores a possible capture move.
 
 
 To do list (not sorted in priority):
-  1) Add ability of a pawn to move two tiles ahead, if it hasn't been moved before.
-  2) Add castling(chess move).
-  3) Add a class derived from Chess that includes a BoardStateContainer as a feature.
+
+1) Add ability of a pawn to move two tiles ahead, if it hasn't been moved before.
+2) Add castling(chess move).
+3) Add pawn morphing into another piece when reaching edge of the board.
+4) Qt integration
+5) Integrate open-source chess engine Stockfish.
+
+// Done
+x) Add a class derived from Chess that includes a BoardStateContainer as a feature.

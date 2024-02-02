@@ -5,7 +5,6 @@
 
 // Stores board states (objects of type 'Chess')
 // Is not tied to any particular game
-// Meaning, can store boards of various sizes at the same time
 class BoardStateContainer {
 public:
 
@@ -14,6 +13,8 @@ public:
 	Chess GetBoardState(int turn_num) const;
 
 	void Clear();
+
+	size_t GetSize() const;
 
 private:
 	std::deque<Chess> boards_;

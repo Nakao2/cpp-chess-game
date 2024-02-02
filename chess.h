@@ -42,7 +42,7 @@ public:
 	// Copies board state. Previous state of *this is destroyed
 	Chess& operator=(const Chess& source);
 
-	~Chess() {
+	virtual ~Chess() {
 		CleanUp();
 	}
 
@@ -61,7 +61,7 @@ public:
 
 	// Does all the necessary checks, moves a piece and returns 'true'
 	// Or does nothing and returns 'false' if the move is illegal
-	bool MovePiece(std::pair<int, int> input_pos, std::pair<int, int> dest_pos);
+	virtual bool MovePiece(std::pair<int, int> input_pos, std::pair<int, int> dest_pos);
 
 	std::pair<int, int> GetDimensions() const;
 
