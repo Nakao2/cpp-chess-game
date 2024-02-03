@@ -33,20 +33,20 @@ Chess::Chess(int n, int m) {
 Chess::Chess() : Chess(STANDART_BOARD_WIDTH, STANDART_BOARD_LENGTH) {
 	for (int row = 0; row < rows_; row += 7) {                             // To avoid code duplication
 		ChessTeam team = (row == 0) ? ChessTeam::BLACK : ChessTeam::WHITE;
-		array_ptr_[row][0] = { ChessPiece::ROOK, team };
-		array_ptr_[row][1] = { ChessPiece::KNIGHT, team };
-		array_ptr_[row][2] = { ChessPiece::BISHOP, team };
-		array_ptr_[row][3] = { ChessPiece::QUEEN, team };
-		array_ptr_[row][4] = { ChessPiece::KING, team };
-		array_ptr_[row][5] = { ChessPiece::BISHOP, team };
-		array_ptr_[row][6] = { ChessPiece::KNIGHT, team };
-		array_ptr_[row][7] = { ChessPiece::ROOK, team };
+		array_ptr_[row][0] = { ChessPiece::ROOK, team, false };
+		array_ptr_[row][1] = { ChessPiece::KNIGHT, team, false };
+		array_ptr_[row][2] = { ChessPiece::BISHOP, team, false };
+		array_ptr_[row][3] = { ChessPiece::QUEEN, team, false };
+		array_ptr_[row][4] = { ChessPiece::KING, team, false };
+		array_ptr_[row][5] = { ChessPiece::BISHOP, team, false };
+		array_ptr_[row][6] = { ChessPiece::KNIGHT, team, false };
+		array_ptr_[row][7] = { ChessPiece::ROOK, team, false };
 	}
 	for (int column = 0; column < columns_; ++column) {
-		array_ptr_[1][column] = { ChessPiece::PAWN, ChessTeam::BLACK };
+		array_ptr_[1][column] = { ChessPiece::PAWN, ChessTeam::BLACK, false };
 	}
 	for (int column = 0; column < columns_; ++column) {
-		array_ptr_[6][column] = { ChessPiece::PAWN, ChessTeam::WHITE };
+		array_ptr_[6][column] = { ChessPiece::PAWN, ChessTeam::WHITE, false };
 	}
 }
 
@@ -91,11 +91,11 @@ void Chess::FillBoardWith(const BoardTile& piece) {
 }
 
 void Chess::FillBoardWithPawns() {
-	FillBoardWith({ ChessPiece::PAWN, ChessTeam::WHITE });
+	FillBoardWith({ ChessPiece::PAWN, ChessTeam::WHITE, false });
 }
 
 void Chess::EmptyBoard() {
-	FillBoardWith({ ChessPiece::EMPTY, ChessTeam::NEUTRAL });
+	FillBoardWith({ ChessPiece::EMPTY, ChessTeam::NEUTRAL, false });
 }
 
 void Chess::PutPieceInPosition(const BoardTile& piece, int row, int column) {
@@ -128,7 +128,8 @@ bool Chess::MovePiece(pair<int, int> input_pos, pair<int, int> dest_pos) {
 		!CheckCollision(input_pos.first, input_pos.second, dest_pos.first, dest_pos.second)) {
 
 		array_ptr_[dest_pos.first][dest_pos.second] = array_ptr_[input_pos.first][input_pos.second];
-		array_ptr_[input_pos.first][input_pos.second] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL };
+		array_ptr_[dest_pos.first][dest_pos.second].has_moved = true;
+		array_ptr_[input_pos.first][input_pos.second] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL, false };
 		is_whites_move_ = (is_whites_move_) ? 0 : 1;
 		return true;
 	}
@@ -224,12 +225,22 @@ bool Chess::CheckLegalPieceMove(int n_input, int m_input, int n_dest, int m_dest
 		return false;
 	case ChessPiece::PAWN:
 	{
-		int8_t pos_dif_n = (piece.piece_team == ChessTeam::WHITE) ? 1 : -1;
-		int8_t pos_dif_m = 1;
-		if (array_ptr_[n_dest][m_dest].piece_type == ChessPiece::EMPTY) {
-			pos_dif_m = 0;
+		int8_t min_dif_n;
+		int8_t max_dif_n;
+		if (piece.piece_team == ChessTeam::WHITE) {
+			min_dif_n = 1;
+			max_dif_n = piece.has_moved ? 1 : 2;
 		}
-		if (n_input - n_dest == pos_dif_n && std::abs(m_input - m_dest) <= pos_dif_m) {
+		else {
+			min_dif_n = -1;
+			max_dif_n = piece.has_moved ? -1 : -2;
+		}
+		int8_t pos_dif_m = 0;
+		if (array_ptr_[n_dest][m_dest].piece_type != ChessPiece::EMPTY) {
+			pos_dif_m = 1;
+			max_dif_n = (max_dif_n > 0) ? 1 : -1;
+		}
+		if ((n_input - n_dest == min_dif_n || n_input - n_dest == max_dif_n) && std::abs(m_input - m_dest) <= pos_dif_m) {
 			return true;
 		}
 		return false;
@@ -310,7 +321,14 @@ bool Chess::CheckCollision(int n_input, int m_input, int n_dest, int m_dest) con
 	}
 	case ChessPiece::PAWN:
 		if (m_input == m_dest) {
-			return (array_ptr_[n_dest][m_dest].piece_type != ChessPiece::EMPTY);
+			int8_t increment_n = (piece_input.piece_team == ChessTeam::WHITE) ? -1 : 1;
+			int pos1 = n_input;
+			while (pos1 != n_dest) {
+				pos1 += increment_n;
+				if (array_ptr_[pos1][m_dest].piece_type != ChessPiece::EMPTY) {
+					return true;
+				}
+			}
 		}
 		return false;
 	}

@@ -24,6 +24,7 @@ enum class ChessTeam {
 struct BoardTile {
 	ChessPiece piece_type = ChessPiece::EMPTY;
 	ChessTeam piece_team = ChessTeam::NEUTRAL;
+	bool has_moved = false;                   // Important to know for pawn moves and potential for castling
 };
 
 class Chess {

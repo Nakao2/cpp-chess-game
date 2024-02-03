@@ -65,6 +65,19 @@ void PlayGameWithCPUS2() {
 	BoardVisualizerFunc(board);
 }
 
+void PlayGameHotSeat() {
+	ChessWithHistory game1;
+	BoardVisualizerFunc(game1);
+	for (int i = 1; i < 100; ++i) {
+		int i_pos1, i_pos2;
+		int o_pos1, o_pos2;
+		cin >> i_pos1 >> i_pos2;
+		cin >> o_pos1 >> o_pos2;
+		game1.MovePiece({ i_pos1, i_pos2 }, { o_pos1, o_pos2 });
+		BoardVisualizerFunc(game1);
+	}
+}
+
 int main() {
-	PlayGameWithCPUS2();
+	PlayGameHotSeat();
 }
