@@ -105,7 +105,7 @@ void Chess::PutPieceInPosition(const BoardTile& piece, int row, int column) {
 }
 
 // Gives all possible destination tiles on the board for a selected piece
-deque<pair<int, int>> Chess::GetPossibleDestTiles(int n_input, int m_input) const {
+deque<pair<int, int>> Chess::GetPossibleDestTiles(int n_input, int m_input) {
 	deque<pair<int, int>> output;
 	if (!CheckValidPieceSelected(n_input, m_input)) {
 		return output;
@@ -113,7 +113,14 @@ deque<pair<int, int>> Chess::GetPossibleDestTiles(int n_input, int m_input) cons
 	for (int n = 0; n < rows_; ++n) {        // Brute force. Inefficient for large boards
 		for (int m = 0; m < columns_; ++m) {
 			if (CheckLegalPieceMove(n_input, m_input, n, m) && !CheckCollision(n_input, m_input, n, m)) {
-				output.push_back({ n, m });
+				BoardTile dest_tile = array_ptr_[n][m];
+				array_ptr_[n][m] = array_ptr_[n_input][m_input];
+				array_ptr_[n_input][m_input] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL, false };
+				if (!IsCheck(array_ptr_[n][m].piece_team)) {
+					output.push_back({ n, m });
+				}
+				array_ptr_[n_input][m_input] = array_ptr_[n][m];
+				array_ptr_[n][m] = dest_tile;
 			}
 		}
 	}
@@ -127,9 +134,16 @@ bool Chess::MovePiece(pair<int, int> input_pos, pair<int, int> dest_pos) {
 		CheckLegalPieceMove(input_pos.first, input_pos.second, dest_pos.first, dest_pos.second) &&
 		!CheckCollision(input_pos.first, input_pos.second, dest_pos.first, dest_pos.second)) {
 
+		BoardTile dest_tile = array_ptr_[dest_pos.first][dest_pos.second];
 		array_ptr_[dest_pos.first][dest_pos.second] = array_ptr_[input_pos.first][input_pos.second];
-		array_ptr_[dest_pos.first][dest_pos.second].has_moved = true;
 		array_ptr_[input_pos.first][input_pos.second] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL, false };
+
+		if (IsCheck(WhoseMove())) { // A move that makes it possible for an opponent to capture king is illegal
+			array_ptr_[input_pos.first][input_pos.second] = array_ptr_[dest_pos.first][dest_pos.second];
+			array_ptr_[dest_pos.first][dest_pos.second] = dest_tile;
+			return false;
+		}
+		array_ptr_[dest_pos.first][dest_pos.second].has_moved = true;
 		is_whites_move_ = (is_whites_move_) ? 0 : 1;
 		return true;
 	}
@@ -332,4 +346,32 @@ bool Chess::CheckCollision(int n_input, int m_input, int n_dest, int m_dest) con
 		}
 		return false;
 	}
+}
+
+// Finds if a king of a specified team is checked
+bool Chess::IsCheck(ChessTeam team) const {
+	std::pair<int, int> king_pos;
+	bool king_found = false;
+	for (int row = 0; row != rows_ && !king_found; ++row) { // Find king of specified team on the board
+		for (int column = 0; column != columns_ && !king_found; ++column) {
+			if (array_ptr_[row][column].piece_team == team &&
+				array_ptr_[row][column].piece_type == ChessPiece::KING) {
+
+				king_pos = { row, column };
+				king_found = true;
+			}
+		}
+	}
+	team = (team == ChessTeam::WHITE) ? ChessTeam::BLACK : ChessTeam::WHITE;
+	for (int row = 0; row != rows_; ++row) { // Check if any opposing team's piece can capture the king
+		for (int column = 0; column != columns_; ++column) {
+			if (array_ptr_[row][column].piece_team == team &&
+				CheckLegalPieceMove(row, column, king_pos.first, king_pos.second) &&
+				!CheckCollision(row, column, king_pos.first, king_pos.second)) {
+
+				return true;
+			}
+		}
+	}
+	return false;
 }

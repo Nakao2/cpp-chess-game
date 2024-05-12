@@ -58,7 +58,7 @@ public:
 	void PutPieceInPosition(const BoardTile& piece, int row, int column);
 
 	// Gives all possible destination tiles on the board for a selected piece
-	std::deque<std::pair<int, int>> GetPossibleDestTiles(int n_input, int m_input) const;
+	std::deque<std::pair<int, int>> GetPossibleDestTiles(int n_input, int m_input);
 
 	// Does all the necessary checks, moves a piece and returns 'true'
 	// Or does nothing and returns 'false' if the move is illegal
@@ -92,6 +92,9 @@ private:
 	// Collision with pieces in the path of movement
     // Expected to run after CheckValidPieceSelected() and CheckLegalPieceMove()
 	bool CheckCollision(int n_input, int m_input, int n_dest, int m_dest) const;
+
+	// Finds if a king of a specified team is checked
+	bool IsCheck(ChessTeam team) const;
 
 	void CleanUp() {
 		for (int i = 0; i < rows_; ++i) {
