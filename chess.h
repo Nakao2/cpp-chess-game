@@ -96,6 +96,16 @@ private:
 	// Finds if a king of a specified team is checked
 	bool IsCheck(ChessTeam team) const;
 
+	// Ignores all rules, does not check for invalid arguments
+	void ForceMove(int n_in, int m_in, int n_dest, int m_dest) {
+		array_ptr_[n_dest][m_dest] = array_ptr_[n_in][m_in];
+		array_ptr_[n_in][m_in] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL, false };
+	}
+
+	// Run after CheckLegalPieceMove() for castling
+	// King must be at input position
+	bool CastlingCheckRequirements(int n_in, int m_in, int n_dest, int m_dest) const;
+
 	void CleanUp() {
 		for (int i = 0; i < rows_; ++i) {
 			delete[] array_ptr_[i];

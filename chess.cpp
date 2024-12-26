@@ -112,15 +112,23 @@ deque<pair<int, int>> Chess::GetPossibleDestTiles(int n_input, int m_input) {
 	}
 	for (int n = 0; n < rows_; ++n) {        // Brute force. Inefficient for large boards
 		for (int m = 0; m < columns_; ++m) {
-			if (CheckLegalPieceMove(n_input, m_input, n, m) && !CheckCollision(n_input, m_input, n, m)) {
-				BoardTile dest_tile = array_ptr_[n][m];
-				array_ptr_[n][m] = array_ptr_[n_input][m_input];
-				array_ptr_[n_input][m_input] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL, false };
-				if (!IsCheck(array_ptr_[n][m].piece_team)) {
-					output.push_back({ n, m });
+			if (CheckLegalPieceMove(n_input, m_input, n, m)) {
+				if (array_ptr_[n_input][m_input].piece_type == ChessPiece::KING && std::abs(m_input - m) == 2) {
+					if(CastlingCheckRequirements(n_input, m_input, n, m)){
+						output.push_back({ n, m });
+					}
+					continue;
 				}
-				array_ptr_[n_input][m_input] = array_ptr_[n][m];
-				array_ptr_[n][m] = dest_tile;
+				if (!CheckCollision(n_input, m_input, n, m)){
+					BoardTile dest_tile = array_ptr_[n][m];
+					array_ptr_[n][m] = array_ptr_[n_input][m_input];
+					array_ptr_[n_input][m_input] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL, false };
+					if (!IsCheck(array_ptr_[n][m].piece_team)) {
+						output.push_back({ n, m });
+					}
+					array_ptr_[n_input][m_input] = array_ptr_[n][m];
+					array_ptr_[n][m] = dest_tile;
+				}
 			}
 		}
 	}
@@ -131,26 +139,47 @@ deque<pair<int, int>> Chess::GetPossibleDestTiles(int n_input, int m_input) {
 // Or does nothing and returns 'false' if the move is illegal
 bool Chess::MovePiece(pair<int, int> input_pos, pair<int, int> dest_pos) {
 	if (CheckValidPieceSelected(input_pos.first, input_pos.second) && CheckCorrectTurnSequence(input_pos.first, input_pos.second) &&
-		CheckLegalPieceMove(input_pos.first, input_pos.second, dest_pos.first, dest_pos.second) &&
-		!CheckCollision(input_pos.first, input_pos.second, dest_pos.first, dest_pos.second)) {
+		CheckLegalPieceMove(input_pos.first, input_pos.second, dest_pos.first, dest_pos.second)) {
 
-		BoardTile dest_tile = array_ptr_[dest_pos.first][dest_pos.second];
-		array_ptr_[dest_pos.first][dest_pos.second] = array_ptr_[input_pos.first][input_pos.second];
-		array_ptr_[input_pos.first][input_pos.second] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL, false };
-
-		if (IsCheck(WhoseMove())) { // A move that makes it possible for an opponent to capture king is illegal
-			array_ptr_[input_pos.first][input_pos.second] = array_ptr_[dest_pos.first][dest_pos.second];
-			array_ptr_[dest_pos.first][dest_pos.second] = dest_tile;
+		if (array_ptr_[input_pos.first][input_pos.second].piece_type == ChessPiece::KING &&  // Castling shenanigans
+			std::abs(input_pos.second - dest_pos.second) == 2) {
+			if (CastlingCheckRequirements(input_pos.first, input_pos.second, dest_pos.first, dest_pos.second)) {
+				int increment_m = (input_pos.second > dest_pos.second) ? 1 : -1;
+				BoardTile Rook;
+				int m_pos = input_pos.second;
+				while (Rook.piece_type != ChessPiece::ROOK) {
+					m_pos -= increment_m;
+					Rook = array_ptr_[input_pos.first][m_pos];
+				}
+				array_ptr_[input_pos.first][m_pos] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL, false };
+				Rook.has_moved = true;
+				array_ptr_[input_pos.first][dest_pos.second + increment_m] = Rook;
+				array_ptr_[dest_pos.first][dest_pos.second] = array_ptr_[input_pos.first][input_pos.second];
+				array_ptr_[dest_pos.first][dest_pos.second].has_moved = true;
+				array_ptr_[input_pos.first][input_pos.second] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL, false };
+				is_whites_move_ = (is_whites_move_) ? 0 : 1;
+				return true;
+			}
 			return false;
 		}
-		array_ptr_[dest_pos.first][dest_pos.second].has_moved = true;
-		is_whites_move_ = (is_whites_move_) ? 0 : 1;
-		return true;
+
+		if (!CheckCollision(input_pos.first, input_pos.second, dest_pos.first, dest_pos.second)){
+			BoardTile dest_tile = array_ptr_[dest_pos.first][dest_pos.second];
+			ForceMove(input_pos.first, input_pos.second, dest_pos.first, dest_pos.second);
+
+			if (IsCheck(WhoseMove())) { // A move that makes it possible for an opponent to capture king is illegal
+				array_ptr_[input_pos.first][input_pos.second] = array_ptr_[dest_pos.first][dest_pos.second];
+				array_ptr_[dest_pos.first][dest_pos.second] = dest_tile;
+				return false;
+			}
+			array_ptr_[dest_pos.first][dest_pos.second].has_moved = true;
+			is_whites_move_ = (is_whites_move_) ? 0 : 1;
+			return true;
+		}
 	}
-	else {
-		return false;
-	}
+	return false;
 }
+
 
 pair<int, int> Chess::GetDimensions() const {
 	return { rows_, columns_ };
@@ -160,7 +189,7 @@ ChessTeam Chess::WhoseMove() const {
 	return (is_whites_move_) ? ChessTeam::WHITE : ChessTeam::BLACK;
 }
 
-inline bool Chess::CheckOutOfBounds(int row, int column) const {
+bool Chess::CheckOutOfBounds(int row, int column) const {
 	if ((row >= rows_) || (row < 0)) {
 		return true;
 	}
@@ -225,7 +254,10 @@ bool Chess::CheckLegalPieceMove(int n_input, int m_input, int n_dest, int m_dest
 		}
 		return false;
 	case ChessPiece::KING:
-		if (std::abs(n_input - n_dest) <= 1 && std::abs(m_input - m_dest) <= 1) {
+		if (n_input == n_dest && std::abs(m_input - m_dest) == 2) { // Castling
+			return true;
+		}
+		if (std::abs(n_input - n_dest) <= 1 && std::abs(m_input - m_dest) <= 1) { // Regular king move
 			return true;
 		}
 		return false;
@@ -366,12 +398,64 @@ bool Chess::IsCheck(ChessTeam team) const {
 	for (int row = 0; row != rows_; ++row) { // Check if any opposing team's piece can capture the king
 		for (int column = 0; column != columns_; ++column) {
 			if (array_ptr_[row][column].piece_team == team &&
-				CheckLegalPieceMove(row, column, king_pos.first, king_pos.second) &&
+				CheckLegalPieceMove(row, column, king_pos.first, king_pos.second) && 
 				!CheckCollision(row, column, king_pos.first, king_pos.second)) {
 
+				if (array_ptr_[row][column].piece_type == ChessPiece::KING && std::abs(column - king_pos.second) == 2) {
+					continue;
+				}
 				return true;
 			}
 		}
 	}
 	return false;
 }
+
+// Run after CheckLegalPieceMove() for castling
+// King must be at input position
+bool Chess::CastlingCheckRequirements(int n_in, int m_in, int n_dest, int m_dest) const {
+	if (array_ptr_[n_in][m_in].has_moved || IsCheck(array_ptr_[n_in][m_in].piece_team)) {
+		return false;
+	}
+	int increment_m = (m_in > m_dest) ? -1 : 1;
+	BoardTile rook;
+	int pos = m_in + increment_m;
+	for (; !CheckOutOfBounds(n_in, pos); pos += increment_m) {
+		if (array_ptr_[n_in][pos].piece_type == ChessPiece::ROOK) {
+			rook = array_ptr_[n_in][pos];
+			break;
+		}
+		if (array_ptr_[n_in][pos].piece_type != ChessPiece::EMPTY) {
+			break;
+		}
+	}
+	if (rook.piece_type != ChessPiece::ROOK || rook.has_moved) {
+		return false;
+	}
+
+	array_ptr_[n_in][pos] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL, false };
+	if (array_ptr_[n_dest][m_dest].piece_type != ChessPiece::EMPTY) {
+		array_ptr_[n_in][pos] = rook;
+		return false;
+	}
+	BoardTile king = array_ptr_[n_in][m_in]; // Puts king into tiles in path of movement and sees if there is a check
+	array_ptr_[n_in][m_in] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL, false };
+	array_ptr_[n_in][m_in + increment_m] = king;
+	if (IsCheck(king.piece_team)) { // If check, return the board to the previous state
+		array_ptr_[n_in][m_in + increment_m] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL, false };
+		array_ptr_[n_in][pos] = rook;
+		array_ptr_[n_in][m_in] = king;
+		return false;
+	}
+	array_ptr_[n_in][m_in + increment_m] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL, false };
+	array_ptr_[n_in][m_in + 2 * increment_m] = king;
+	bool output = true;
+	if (IsCheck(king.piece_team)) {
+		output = false;
+	}
+	array_ptr_[n_in][m_in + 2 * increment_m] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL, false };
+	array_ptr_[n_in][pos] = rook;
+	array_ptr_[n_in][m_in] = king;
+	return output;
+}
+

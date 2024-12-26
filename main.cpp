@@ -20,13 +20,20 @@ void PrintDeque(const deque<pair<int, int>>& source) {
 void PlayGameWithCPUS() {
 	using namespace std::chrono_literals;
 	Chess game1;
+	game1.EmptyBoard();
+	game1.PutPieceInPosition({ ChessPiece::KING, ChessTeam::WHITE, false }, 7, 4);
+	game1.PutPieceInPosition({ ChessPiece::ROOK, ChessTeam::WHITE, false }, 7, 0);
+	game1.PutPieceInPosition({ ChessPiece::ROOK, ChessTeam::WHITE, false }, 7, 7);
+	game1.PutPieceInPosition({ ChessPiece::KING, ChessTeam::BLACK, false }, 0, 3);
+	game1.PutPieceInPosition({ ChessPiece::ROOK, ChessTeam::BLACK, false }, 0, 0);
+	game1.PutPieceInPosition({ ChessPiece::ROOK, ChessTeam::BLACK, false }, 0, 7);
 	RandomMovesPlayer white(game1, ChessTeam::WHITE);
 	RandomMovesPlayer black(game1, ChessTeam::BLACK);
 	BoardVisualizerFunc(game1);
 	BoardStateContainer boards;
-	for (int i = 1; i < 102; ++i) {
+	for (int i = 1; i < 10; ++i) {
 		cout << "Turn " << i++ << ": \n";
-		white.AgrMovePiece();
+		white.MovePiece();
 		boards.RecordBoardState(game1);
 		BoardVisualizerFunc(game1);
 		std::this_thread::sleep_for(0s);
@@ -38,7 +45,7 @@ void PlayGameWithCPUS() {
 	}
 	cout << "\n\n\n\n";
 	BoardVisualizerFunc(boards.GetBoardState(3));
-	BoardVisualizerFunc(boards.GetBoardState(29));
+	BoardVisualizerFunc(boards.GetBoardState(6));
 }
 
 void PlayGameWithCPUS2() {
@@ -68,7 +75,7 @@ void PlayGameWithCPUS2() {
 void PlayGameHotSeat() {
 	ChessWithHistory game1;
 	BoardVisualizerFunc(game1);
-	for (int i = 1; i < 10; ++i) {
+	for (int i = 1; i < 100; ++i) {
 		int i_pos1, i_pos2;
 		int o_pos1, o_pos2;
 		cin >> i_pos1 >> i_pos2;
@@ -76,7 +83,7 @@ void PlayGameHotSeat() {
 		game1.MovePiece({ i_pos1, i_pos2 }, { o_pos1, o_pos2 });
 		BoardVisualizerFunc(game1);
 	}
-	for (int i = 0; i < 10; ++i) {
+	for (int i = 0; i < 0; ++i) {
 		int x, y;
 		std::cin >> x >> y;
 		PrintDeque(game1.GetPossibleDestTiles(x, y));
@@ -84,5 +91,5 @@ void PlayGameHotSeat() {
 }
 
 int main() {
-	PlayGameHotSeat();
+	PlayGameWithCPUS();
 }
