@@ -28,22 +28,9 @@ Class derived form Chess. Added BoardStateContainer as a member.
 Writes into it with every successful move.
 
 
-Known bugs:
+Missing classic chess features:
 
-// Fixed
+1) Pawn promotion choice
 
-1) cpu_opponent.h
-Method AgrMovePiece() sometimes ignores a possible capture move.
-
-
-To do list (not sorted in priority):
-
-1) Add ability of a pawn to move two tiles ahead, if it hasn't been moved before.
-2) Add castling(chess move).
-3) Add pawn morphing into another piece when reaching edge of the board.
-4) Qt integration
-5) Integrate open-source chess engine Stockfish.
-
-// Done
-
-1) Add a class derived from Chess that includes a BoardStateContainer as a feature.
+2) While a checkmate makes any further moves impossible, 
+   the user or cpu player are not notified of it.

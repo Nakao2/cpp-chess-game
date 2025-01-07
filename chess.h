@@ -58,7 +58,7 @@ public:
 	void PutPieceInPosition(const BoardTile& piece, int row, int column);
 
 	// Gives all possible destination tiles on the board for a selected piece
-	std::deque<std::pair<int, int>> GetPossibleDestTiles(int n_input, int m_input);
+	std::deque<std::pair<int, int>> GetPossibleDestTiles(int n_input, int m_input) const;
 
 	// Does all the necessary checks, moves a piece and returns 'true'
 	// Or does nothing and returns 'false' if the move is illegal
@@ -73,6 +73,9 @@ private:
 	int rows_ = 0;
 	int columns_ = 0;
 	bool is_whites_move_ = true;
+	
+	// En passant { has a pawn moved two tiles ahead previous turn, { coordinates }}
+	std::pair<bool, std::pair<int, int>> en_passant_ = { false, { 0, 0 } };
 
 	bool CheckOutOfBounds(int row, int column) const;
 

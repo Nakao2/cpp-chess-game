@@ -72,8 +72,30 @@ void PlayGameWithCPUS2() {
 	BoardVisualizerFunc(board);
 }
 
+void EnpassantTest() {
+	using namespace std::chrono_literals;
+	Chess game1(8, 8);
+	game1.PutPieceInPosition({ ChessPiece::KING, ChessTeam::BLACK, false }, 0, 0);
+	game1.PutPieceInPosition({ ChessPiece::KING, ChessTeam::WHITE, false }, 7, 7);
+	game1.PutPieceInPosition({ ChessPiece::PAWN, ChessTeam::BLACK, false }, 2, 3);
+	game1.PutPieceInPosition({ ChessPiece::PAWN, ChessTeam::BLACK, false }, 2, 5);
+	game1.PutPieceInPosition({ ChessPiece::PAWN, ChessTeam::WHITE, false }, 4, 4);
+	game1.MovePiece({ 7, 7 }, { 6, 7 });
+	BoardVisualizerFunc(game1);
+	game1.MovePiece({ 2, 3 }, { 4, 3 });
+	BoardVisualizerFunc(game1);
+	PrintDeque(game1.GetPossibleDestTiles(4, 4));
+}
+
 void PlayGameHotSeat() {
-	ChessWithHistory game1;
+	Chess game1(8, 8);
+	for (int i = 0; i < 8; ++i) {
+		game1.PutPieceInPosition({ ChessPiece::PAWN, ChessTeam::BLACK, false }, 2, i);
+		game1.PutPieceInPosition({ ChessPiece::PAWN, ChessTeam::WHITE, false }, 5, i);
+	}
+	game1.PutPieceInPosition({ ChessPiece::KING, ChessTeam::BLACK, false }, 0, 0);
+	game1.PutPieceInPosition({ ChessPiece::KING, ChessTeam::WHITE, false }, 4, 7);
+	game1.PutPieceInPosition({ ChessPiece::ROOK, ChessTeam::BLACK, false }, 4, 0);
 	BoardVisualizerFunc(game1);
 	for (int i = 1; i < 100; ++i) {
 		int i_pos1, i_pos2;
@@ -83,13 +105,8 @@ void PlayGameHotSeat() {
 		game1.MovePiece({ i_pos1, i_pos2 }, { o_pos1, o_pos2 });
 		BoardVisualizerFunc(game1);
 	}
-	for (int i = 0; i < 0; ++i) {
-		int x, y;
-		std::cin >> x >> y;
-		PrintDeque(game1.GetPossibleDestTiles(x, y));
-	}
 }
 
 int main() {
-	PlayGameWithCPUS();
+	EnpassantTest();
 }

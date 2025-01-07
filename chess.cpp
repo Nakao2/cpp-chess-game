@@ -105,7 +105,7 @@ void Chess::PutPieceInPosition(const BoardTile& piece, int row, int column) {
 }
 
 // Gives all possible destination tiles on the board for a selected piece
-deque<pair<int, int>> Chess::GetPossibleDestTiles(int n_input, int m_input) {
+deque<pair<int, int>> Chess::GetPossibleDestTiles(int n_input, int m_input) const {
 	deque<pair<int, int>> output;
 	if (!CheckValidPieceSelected(n_input, m_input)) {
 		return output;
@@ -113,13 +113,31 @@ deque<pair<int, int>> Chess::GetPossibleDestTiles(int n_input, int m_input) {
 	for (int n = 0; n < rows_; ++n) {        // Brute force. Inefficient for large boards
 		for (int m = 0; m < columns_; ++m) {
 			if (CheckLegalPieceMove(n_input, m_input, n, m)) {
+				// Castling
 				if (array_ptr_[n_input][m_input].piece_type == ChessPiece::KING && std::abs(m_input - m) == 2) {
 					if(CastlingCheckRequirements(n_input, m_input, n, m)){
 						output.push_back({ n, m });
 					}
-					continue;
 				}
-				if (!CheckCollision(n_input, m_input, n, m)){
+				// En passant
+				else if (array_ptr_[n_input][m_input].piece_type == ChessPiece::PAWN &&
+					en_passant_.first && n == en_passant_.second.first && m == en_passant_.second.second) {
+					BoardTile enemy_pawn = array_ptr_[n_input][m];
+					if (enemy_pawn.piece_team == ChessTeam::NEUTRAL) {
+						continue;
+					}
+					array_ptr_[n][m] = array_ptr_[n_input][m_input];
+					array_ptr_[n_input][m_input] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL, false };
+					array_ptr_[n_input][m] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL, false };
+					if (!IsCheck(array_ptr_[n][m].piece_team)) {
+						output.push_back({ n, m });
+					}
+					array_ptr_[n_input][m_input] = array_ptr_[n][m];
+					array_ptr_[n][m] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL, false };
+					array_ptr_[n_input][m] = enemy_pawn;
+				}
+				// All else
+				else if (!CheckCollision(n_input, m_input, n, m)){
 					BoardTile dest_tile = array_ptr_[n][m];
 					array_ptr_[n][m] = array_ptr_[n_input][m_input];
 					array_ptr_[n_input][m_input] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL, false };
@@ -158,10 +176,36 @@ bool Chess::MovePiece(pair<int, int> input_pos, pair<int, int> dest_pos) {
 				array_ptr_[dest_pos.first][dest_pos.second].has_moved = true;
 				array_ptr_[input_pos.first][input_pos.second] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL, false };
 				is_whites_move_ = (is_whites_move_) ? 0 : 1;
+				en_passant_.first = false;
 				return true;
 			}
 			return false;
 		}
+
+		if (array_ptr_[input_pos.first][input_pos.second].piece_type == ChessPiece::PAWN && // En passant logic
+			en_passant_.first &&
+			dest_pos.first == en_passant_.second.first && dest_pos.second == en_passant_.second.second) {
+
+			BoardTile enemy_pawn = array_ptr_[input_pos.first][dest_pos.second];
+			if (enemy_pawn.piece_team == ChessTeam::NEUTRAL) { // Pointless with classic turn sequence
+				return false;
+			}
+			ForceMove(input_pos.first, input_pos.second, dest_pos.first, dest_pos.second);
+			array_ptr_[input_pos.first][dest_pos.second] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL, false };
+
+			if (IsCheck(WhoseMove())) {
+				array_ptr_[input_pos.first][dest_pos.second] = enemy_pawn;
+				array_ptr_[input_pos.first][input_pos.second] = array_ptr_[dest_pos.first][dest_pos.second];
+				array_ptr_[dest_pos.first][dest_pos.second] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL, false };
+				return false;
+			}
+
+			en_passant_.first = false;
+			array_ptr_[dest_pos.first][dest_pos.second].has_moved = true;
+			is_whites_move_ = (is_whites_move_) ? 0 : 1;
+			return true;
+		}
+
 
 		if (!CheckCollision(input_pos.first, input_pos.second, dest_pos.first, dest_pos.second)){
 			BoardTile dest_tile = array_ptr_[dest_pos.first][dest_pos.second];
@@ -171,6 +215,17 @@ bool Chess::MovePiece(pair<int, int> input_pos, pair<int, int> dest_pos) {
 				array_ptr_[input_pos.first][input_pos.second] = array_ptr_[dest_pos.first][dest_pos.second];
 				array_ptr_[dest_pos.first][dest_pos.second] = dest_tile;
 				return false;
+			}
+
+			dest_tile = array_ptr_[dest_pos.first][dest_pos.second];
+			// Record en passant to memory
+			if (dest_tile.piece_type == ChessPiece::PAWN && std::abs(dest_pos.first - input_pos.first) == 2) {
+				int8_t increment_n = dest_tile.piece_team == ChessTeam::WHITE ? 1 : -1;
+				en_passant_.first = true;
+				en_passant_.second = { dest_pos.first + increment_n, dest_pos.second };
+			}
+			else {
+				en_passant_.first = false;
 			}
 			array_ptr_[dest_pos.first][dest_pos.second].has_moved = true;
 			is_whites_move_ = (is_whites_move_) ? 0 : 1;
@@ -282,7 +337,8 @@ bool Chess::CheckLegalPieceMove(int n_input, int m_input, int n_dest, int m_dest
 			max_dif_n = piece.has_moved ? -1 : -2;
 		}
 		int8_t pos_dif_m = 0;
-		if (array_ptr_[n_dest][m_dest].piece_type != ChessPiece::EMPTY) {
+		if (array_ptr_[n_dest][m_dest].piece_type != ChessPiece::EMPTY || 
+			(en_passant_.first && n_dest == en_passant_.second.first && m_dest == en_passant_.second.second)) {
 			pos_dif_m = 1;
 			max_dif_n = (max_dif_n > 0) ? 1 : -1;
 		}
