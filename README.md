@@ -30,7 +30,5 @@ Writes into it with every successful move.
 
 Missing classic chess features:
 
-1) Pawn promotion choice
-
-2) While a checkmate makes any further moves impossible, 
+1) While a checkmate makes any further moves impossible, 
    the user or cpu player are not notified of it.

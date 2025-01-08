@@ -87,6 +87,32 @@ void EnpassantTest() {
 	PrintDeque(game1.GetPossibleDestTiles(4, 4));
 }
 
+void PawnPromotionTest() {
+	ChessWithHistory game1(8 ,8);
+	game1.PutPieceInPosition({ ChessPiece::KING, ChessTeam::BLACK, false }, 0, 0);
+	game1.PutPieceInPosition({ ChessPiece::KING, ChessTeam::WHITE, false }, 7, 7);
+	for (int i = 0; i < 8; ++i) {
+		game1.PutPieceInPosition({ ChessPiece::PAWN, ChessTeam::BLACK, false }, 2, i);
+		game1.PutPieceInPosition({ ChessPiece::PAWN, ChessTeam::WHITE, false }, 5, i);
+	}
+	RandomMovesPlayer white(game1, ChessTeam::WHITE);
+	RandomMovesPlayer black(game1, ChessTeam::BLACK);
+	for (int i = 1; i < 102; ++i) {
+		cout << "Turn " << i++ << ": \n";
+		white.MovePiece();
+		if (game1.PawnPromotion()) {
+			game1.PawnPromotion(ChessPiece::QUEEN);
+		}
+		BoardVisualizerFunc(game1);
+		cout << "Turn " << i << ": \n";
+		black.MovePiece();
+		if (game1.PawnPromotion()) {
+			game1.PawnPromotion(ChessPiece::QUEEN);
+		}
+		BoardVisualizerFunc(game1);
+	}
+}
+
 void PlayGameHotSeat() {
 	Chess game1(8, 8);
 	for (int i = 0; i < 8; ++i) {
@@ -108,5 +134,5 @@ void PlayGameHotSeat() {
 }
 
 int main() {
-	EnpassantTest();
+	PawnPromotionTest();
 }

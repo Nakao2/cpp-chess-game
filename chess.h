@@ -68,6 +68,17 @@ public:
 
 	ChessTeam WhoseMove() const;
 
+	[[nodiscard]] bool PawnPromotion() const {
+		return pawn_promotion_.first;
+	}
+
+	// Requires a wrapper to work properly
+	// Otherwise turn sequence and team ownership are ignored
+	void PawnPromotion(ChessPiece piece) {
+		array_ptr_[pawn_promotion_.second.first][pawn_promotion_.second.second].piece_type = piece;
+		pawn_promotion_.first = false;
+	}
+
 private:
 	BoardTile** array_ptr_;
 	int rows_ = 0;
@@ -76,6 +87,8 @@ private:
 	
 	// En passant { has a pawn moved two tiles ahead previous turn, { coordinates }}
 	std::pair<bool, std::pair<int, int>> en_passant_ = { false, { 0, 0 } };
+	// Pawn promotion possibility
+	std::pair<bool, std::pair<int, int>> pawn_promotion_ = { false, { 0, 0 } };
 
 	bool CheckOutOfBounds(int row, int column) const;
 

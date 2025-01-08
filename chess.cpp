@@ -59,6 +59,8 @@ Chess::Chess(const Chess& source) : Chess(source.GetDimensions().first, source.G
 			this->PutPieceInPosition(tile, row, column);
 		}
 	}
+	this->en_passant_ = source.en_passant_;
+	this->pawn_promotion_ = source.pawn_promotion_;
 	this->is_whites_move_ = source.is_whites_move_;
 }
 
@@ -68,10 +70,13 @@ Chess& Chess::operator=(const Chess& source) {
 		return *this;
 	}
 	Chess copy(source);
+	// Swap necessary for copy's destructor
 	std::swap(this->array_ptr_, copy.array_ptr_);
 	std::swap(this->rows_, copy.rows_);
 	std::swap(this->columns_, copy.columns_);
-	this->is_whites_move_ = copy.is_whites_move_;  // Is not used in 'copy' destructor, swap unecessary
+	this->en_passant_ = copy.en_passant_;
+	this->pawn_promotion_ = copy.pawn_promotion_;
+	this->is_whites_move_ = copy.is_whites_move_;
 	return *this;
 }
 
@@ -218,14 +223,21 @@ bool Chess::MovePiece(pair<int, int> input_pos, pair<int, int> dest_pos) {
 			}
 
 			dest_tile = array_ptr_[dest_pos.first][dest_pos.second];
-			// Record en passant to memory
-			if (dest_tile.piece_type == ChessPiece::PAWN && std::abs(dest_pos.first - input_pos.first) == 2) {
-				int8_t increment_n = dest_tile.piece_team == ChessTeam::WHITE ? 1 : -1;
-				en_passant_.first = true;
-				en_passant_.second = { dest_pos.first + increment_n, dest_pos.second };
-			}
-			else {
-				en_passant_.first = false;
+			if (dest_tile.piece_type == ChessPiece::PAWN) {
+				// Record en passant to memory
+				if (std::abs(dest_pos.first - input_pos.first) == 2) {
+					int8_t increment_n = dest_tile.piece_team == ChessTeam::WHITE ? 1 : -1;
+					en_passant_.first = true;
+					en_passant_.second = { dest_pos.first + increment_n, dest_pos.second };
+				}
+				else {
+					en_passant_.first = false;
+				}
+				// If pawn reached the end of the board
+				if (dest_pos.first == 0 || dest_pos.first == rows_ - 1) {
+					pawn_promotion_.first = true;
+					pawn_promotion_.second = { dest_pos.first, dest_pos.second };
+				}
 			}
 			array_ptr_[dest_pos.first][dest_pos.second].has_moved = true;
 			is_whites_move_ = (is_whites_move_) ? 0 : 1;
