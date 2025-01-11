@@ -64,6 +64,15 @@ Chess::Chess(const Chess& source) : Chess(source.GetDimensions().first, source.G
 	this->is_whites_move_ = source.is_whites_move_;
 }
 
+Chess::Chess(Chess&& source) {
+	std::swap(array_ptr_, source.array_ptr_);
+	std::swap(rows_, source.rows_);
+	std::swap(columns_, source.columns_);
+	is_whites_move_ = source.is_whites_move_;
+	en_passant_ = source.en_passant_;
+	pawn_promotion_ = source.pawn_promotion_;
+}
+
 // Copies board state. Previous state of *this is destroyed
 Chess& Chess::operator=(const Chess& source) {
 	if (&source == this) {
@@ -222,6 +231,7 @@ bool Chess::MovePiece(pair<int, int> input_pos, pair<int, int> dest_pos) {
 				return false;
 			}
 
+			en_passant_.first = false;
 			dest_tile = array_ptr_[dest_pos.first][dest_pos.second];
 			if (dest_tile.piece_type == ChessPiece::PAWN) {
 				// Record en passant to memory
@@ -229,9 +239,6 @@ bool Chess::MovePiece(pair<int, int> input_pos, pair<int, int> dest_pos) {
 					int8_t increment_n = dest_tile.piece_team == ChessTeam::WHITE ? 1 : -1;
 					en_passant_.first = true;
 					en_passant_.second = { dest_pos.first + increment_n, dest_pos.second };
-				}
-				else {
-					en_passant_.first = false;
 				}
 				// If pawn reached the end of the board
 				if (dest_pos.first == 0 || dest_pos.first == rows_ - 1) {
@@ -254,6 +261,17 @@ pair<int, int> Chess::GetDimensions() const {
 
 ChessTeam Chess::WhoseMove() const {
 	return (is_whites_move_) ? ChessTeam::WHITE : ChessTeam::BLACK;
+}
+
+[[nodiscard]] bool Chess::PawnPromotion() const {
+	return pawn_promotion_.first;
+}
+
+// Requires a wrapper to work properly
+// Otherwise turn sequence and team ownership are ignored
+void Chess::PawnPromotion(ChessPiece piece) {
+	array_ptr_[pawn_promotion_.second.first][pawn_promotion_.second.second].piece_type = piece;
+	pawn_promotion_.first = false;
 }
 
 bool Chess::CheckOutOfBounds(int row, int column) const {

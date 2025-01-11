@@ -40,6 +40,8 @@ public:
 	// array_ptr_ will be unique
 	Chess(const Chess& source);
 
+	Chess(Chess&& source);
+
 	// Copies board state. Previous state of *this is destroyed
 	Chess& operator=(const Chess& source);
 
@@ -68,19 +70,14 @@ public:
 
 	ChessTeam WhoseMove() const;
 
-	[[nodiscard]] bool PawnPromotion() const {
-		return pawn_promotion_.first;
-	}
+	[[nodiscard]] bool PawnPromotion() const;
 
 	// Requires a wrapper to work properly
 	// Otherwise turn sequence and team ownership are ignored
-	void PawnPromotion(ChessPiece piece) {
-		array_ptr_[pawn_promotion_.second.first][pawn_promotion_.second.second].piece_type = piece;
-		pawn_promotion_.first = false;
-	}
+	void PawnPromotion(ChessPiece piece);
 
 private:
-	BoardTile** array_ptr_;
+	BoardTile** array_ptr_ = nullptr;
 	int rows_ = 0;
 	int columns_ = 0;
 	bool is_whites_move_ = true;
