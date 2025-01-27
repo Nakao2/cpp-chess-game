@@ -40,10 +40,13 @@ public:
 	// array_ptr_ will be unique
 	Chess(const Chess& source);
 
-	Chess(Chess&& source);
+	Chess(Chess&& source) noexcept;
 
 	// Copies board state. Previous state of *this is destroyed
 	Chess& operator=(const Chess& source);
+
+	// Essentially swaps contents
+	Chess& operator=(Chess&& source) noexcept;
 
 	virtual ~Chess() {
 		CleanUp();
@@ -62,6 +65,10 @@ public:
 	// Gives all possible destination tiles on the board for a selected piece
 	std::deque<std::pair<int, int>> GetPossibleDestTiles(int n_input, int m_input) const;
 
+	// Avoids rule checks and makes a move
+	// If used after GetPossibleTiles(), avoids redundancy
+	void ForceMove(std::pair<int, int> input_pos, std::pair<int, int> output_pos);
+
 	// Does all the necessary checks, moves a piece and returns 'true'
 	// Or does nothing and returns 'false' if the move is illegal
 	virtual bool MovePiece(std::pair<int, int> input_pos, std::pair<int, int> dest_pos);
@@ -75,6 +82,12 @@ public:
 	// Requires a wrapper to work properly
 	// Otherwise turn sequence and team ownership are ignored
 	void PawnPromotion(ChessPiece piece);
+
+	[[nodiscard]] std::pair<bool, std::pair<int, int>> GetEnpassantData() const;
+
+	void SetEnpassantData(std::pair<bool, std::pair<int, int>> source);
+
+	void SwitchTurnSequence();
 
 private:
 	BoardTile** array_ptr_ = nullptr;
@@ -108,12 +121,6 @@ private:
 
 	// Finds if a king of a specified team is checked
 	bool IsCheck(ChessTeam team) const;
-
-	// Ignores all rules, does not check for invalid arguments
-	void ForceMove(int n_in, int m_in, int n_dest, int m_dest) {
-		array_ptr_[n_dest][m_dest] = array_ptr_[n_in][m_in];
-		array_ptr_[n_in][m_in] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL, false };
-	}
 
 	// Run after CheckLegalPieceMove() for castling
 	// King must be at input position

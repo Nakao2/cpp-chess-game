@@ -3,10 +3,14 @@
 #include "cpu_opponent.h"
 #include "board_state_container.h"
 #include "chess_history.h"
+#include "chess_engine.h"
+#include "log_duration2.h"
 
 #include <iostream>
 #include <chrono>
 #include <thread>
+#include <vector>
+#include <map>
 
 using namespace std;
 
@@ -133,6 +137,88 @@ void PlayGameHotSeat() {
 	}
 }
 
+void ChessEngineTest() {
+	Chess board;
+	int n_in, m_in;
+	int n_out, m_out;
+	MoveData move;
+	for (int i = 0; i < 38; ++i) {
+		BoardVisualizerFunc(board);
+		std::cin >> n_in >> m_in;
+		std::cin >> n_out >> m_out;
+		board.MovePiece({ n_in, m_in }, { n_out, m_out });
+		BoardVisualizerFunc(board);
+		move = PlayMove(board, ChessTeam::BLACK, 5);
+		board.MovePiece(move.start, move.end);
+	}
+}
+void ChessEngineTest2() {
+	Chess board;
+	int n_in, m_in;
+	int n_out, m_out;
+	FullMoveData move;
+	for (int i = 0; i < 50; ++i) {
+		BoardVisualizerFunc(board);
+		std::cin >> n_in >> m_in;
+		std::cin >> n_out >> m_out;
+		board.MovePiece({ n_in, m_in }, { n_out, m_out });
+		if (board.PawnPromotion()) {
+			board.PawnPromotion(ChessPiece::QUEEN);
+		}
+		BoardVisualizerFunc(board);
+		move = PlayMoveOP(board, ChessTeam::BLACK, 5);
+		board.MovePiece(move.own_move.start, move.own_move.end);
+		if (move.promotion_data.first) {
+			board.PawnPromotion(move.promotion_data.second);
+		}
+	}
+}
+
+void Test2() {
+	Chess board;
+	int n_in, m_in;
+	int n_out, m_out;
+	for (int i = 0; i < 4; ++i) {
+		BoardVisualizerFunc(board);
+		std::cin >> n_in >> m_in;
+		std::cin >> n_out >> m_out;
+		board.MovePiece({ n_in, m_in }, { n_out, m_out });
+		BoardVisualizerFunc(board);
+		std::cin >> n_in >> m_in;
+		std::cin >> n_out >> m_out;
+		board.MovePiece({ n_in, m_in }, { n_out, m_out });
+	}
+	BoardVisualizerFunc(board);
+	PrintDeque(board.GetPossibleDestTiles(6, 0));
+}
+
+struct PieceImage {
+	ChessPiece piece;
+	ChessTeam team;
+};
+
+/*  Chess board;
+	MoveData move;
+	BoardVisualizerFunc(board);
+	for (int i = 0; i < 50; ++i) {
+		int n_in, m_in, n_out, m_out;
+		std::cin >> n_in >> m_in >> n_out >> m_out;
+		board.MovePiece({ n_in, m_in }, { n_out, m_out });
+		BoardVisualizerFunc(board);
+		{
+			LogDuration log2("1", std::cout);
+			std::cout << '\n';
+			move = PlayMove(board, ChessTeam::BLACK, 5);
+		}
+		{
+			LogDuration log2("2", std::cout);
+			std::cout << '\n';
+			move = PlayMoveOP(board, ChessTeam::BLACK, 5);
+		}
+		board.ForceMove(move.start, move.end);
+		BoardVisualizerFunc(board);
+	}*/
+
 int main() {
-	PawnPromotionTest();
+	std::cout << std::thread::hardware_concurrency();
 }

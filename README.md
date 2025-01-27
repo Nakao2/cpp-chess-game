@@ -27,6 +27,10 @@ aside from being able to prioritize agressive moves(capturing a piece) over non-
 Class derived form Chess. Added BoardStateContainer as a member.
 Writes into it with every successful move.
 
+5) chess_engine.h
+
+Contains an algorithm that searches all possible moves at a certain depth and
+chooses the best move by piece value gained.
 
 Missing classic chess features:
 

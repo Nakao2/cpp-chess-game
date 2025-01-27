@@ -64,7 +64,7 @@ Chess::Chess(const Chess& source) : Chess(source.GetDimensions().first, source.G
 	this->is_whites_move_ = source.is_whites_move_;
 }
 
-Chess::Chess(Chess&& source) {
+Chess::Chess(Chess&& source) noexcept {
 	std::swap(array_ptr_, source.array_ptr_);
 	std::swap(rows_, source.rows_);
 	std::swap(columns_, source.columns_);
@@ -86,6 +86,19 @@ Chess& Chess::operator=(const Chess& source) {
 	this->en_passant_ = copy.en_passant_;
 	this->pawn_promotion_ = copy.pawn_promotion_;
 	this->is_whites_move_ = copy.is_whites_move_;
+	return *this;
+}
+
+// Essentially swaps contents
+Chess& Chess::operator=(Chess&& source) noexcept {
+	if (&source != this) {
+		std::swap(this->array_ptr_, source.array_ptr_);
+		std::swap(this->rows_, source.rows_);
+		std::swap(this->columns_, source.columns_);
+		this->en_passant_ = source.en_passant_;
+		this->pawn_promotion_ = source.pawn_promotion_;
+		this->is_whites_move_ = source.is_whites_move_;
+	}
 	return *this;
 }
 
@@ -167,6 +180,50 @@ deque<pair<int, int>> Chess::GetPossibleDestTiles(int n_input, int m_input) cons
 	return output;
 }
 
+// Avoids rule checks and makes a move
+// If used after GetPossibleTiles(), avoids redundancy
+void Chess::ForceMove(std::pair<int, int> input_pos, std::pair<int, int> output_pos) {
+
+	// Assumed false unless stated otherwise
+	en_passant_.first = false;
+	// Castling required additional rook reposition
+	if (array_ptr_[input_pos.first][input_pos.second].piece_type == ChessPiece::KING &&
+		std::abs(input_pos.second - output_pos.second) == 2) {
+
+		int8_t increment_m = (output_pos.second > input_pos.second) ? 1 : -1;
+		BoardTile rook;
+		int pos_m = input_pos.second;
+		while (rook.piece_type != ChessPiece::ROOK) {
+			pos_m += increment_m;
+			rook = array_ptr_[input_pos.first][pos_m];
+		}
+		rook.has_moved = true;
+		array_ptr_[input_pos.first][pos_m] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL, false };
+		array_ptr_[input_pos.first][output_pos.second - increment_m] = rook;
+	}
+	else if (array_ptr_[input_pos.first][input_pos.second].piece_type == ChessPiece::PAWN) {
+
+		if (std::abs(input_pos.first - output_pos.first) == 2) {
+			en_passant_.first = true;
+			en_passant_.second.first = (input_pos.first + output_pos.first) / 2;
+			en_passant_.second.second = output_pos.second;
+		}
+		else if (std::abs(input_pos.second - output_pos.second) == 1 &&
+			array_ptr_[output_pos.first][output_pos.second].piece_team == ChessTeam::NEUTRAL) {
+
+			array_ptr_[input_pos.first][output_pos.second] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL, false };
+		}
+		if (output_pos.first == 0 || output_pos.first == rows_ - 1) {
+			pawn_promotion_.first = true;
+			pawn_promotion_.second = { output_pos.first, output_pos.second };
+		}
+	}
+	array_ptr_[output_pos.first][output_pos.second] = array_ptr_[input_pos.first][input_pos.second];
+	array_ptr_[output_pos.first][output_pos.second].has_moved = true;
+	array_ptr_[input_pos.first][input_pos.second] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL, false };
+	is_whites_move_ = (is_whites_move_) ? 0 : 1;
+}
+
 // Does all the necessary checks, moves a piece and returns 'true'
 // Or does nothing and returns 'false' if the move is illegal
 bool Chess::MovePiece(pair<int, int> input_pos, pair<int, int> dest_pos) {
@@ -204,7 +261,8 @@ bool Chess::MovePiece(pair<int, int> input_pos, pair<int, int> dest_pos) {
 			if (enemy_pawn.piece_team == ChessTeam::NEUTRAL) { // Pointless with classic turn sequence
 				return false;
 			}
-			ForceMove(input_pos.first, input_pos.second, dest_pos.first, dest_pos.second);
+			array_ptr_[dest_pos.first][dest_pos.second] = array_ptr_[input_pos.first][input_pos.second];
+			array_ptr_[input_pos.first][input_pos.second] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL, false };
 			array_ptr_[input_pos.first][dest_pos.second] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL, false };
 
 			if (IsCheck(WhoseMove())) {
@@ -223,8 +281,9 @@ bool Chess::MovePiece(pair<int, int> input_pos, pair<int, int> dest_pos) {
 
 		if (!CheckCollision(input_pos.first, input_pos.second, dest_pos.first, dest_pos.second)){
 			BoardTile dest_tile = array_ptr_[dest_pos.first][dest_pos.second];
-			ForceMove(input_pos.first, input_pos.second, dest_pos.first, dest_pos.second);
-
+			array_ptr_[dest_pos.first][dest_pos.second] = array_ptr_[input_pos.first][input_pos.second];
+			array_ptr_[input_pos.first][input_pos.second] = { ChessPiece::EMPTY, ChessTeam::NEUTRAL, false };
+			
 			if (IsCheck(WhoseMove())) { // A move that makes it possible for an opponent to capture king is illegal
 				array_ptr_[input_pos.first][input_pos.second] = array_ptr_[dest_pos.first][dest_pos.second];
 				array_ptr_[dest_pos.first][dest_pos.second] = dest_tile;
@@ -272,6 +331,18 @@ ChessTeam Chess::WhoseMove() const {
 void Chess::PawnPromotion(ChessPiece piece) {
 	array_ptr_[pawn_promotion_.second.first][pawn_promotion_.second.second].piece_type = piece;
 	pawn_promotion_.first = false;
+}
+
+[[nodiscard]] std::pair<bool, std::pair<int, int>> Chess::GetEnpassantData() const {
+	return en_passant_;
+}
+
+void Chess::SetEnpassantData(std::pair<bool, std::pair<int, int>> source) {
+	en_passant_ = source;
+}
+
+void Chess::SwitchTurnSequence() {
+	is_whites_move_ = (is_whites_move_) ? false : true;
 }
 
 bool Chess::CheckOutOfBounds(int row, int column) const {
